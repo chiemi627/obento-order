@@ -1,0 +1,83 @@
+<%- include('head.ejs'); %>
+<body>
+<%- include('header.ejs'); %>
+<div class="container">
+<h2>注文フォーム</h2>
+<ul>
+  <li>平日のみ取り扱います。前日の18時30分まで注文可能です。</li>
+  <li>毎週金曜日に次週のメニューが更新されます</li>  
+</ul>
+<form action="order" method="post" id="validationForm">
+
+<div class="form-group">
+    <label for="name">氏名</label>
+      <input type="text" class="form-control"　id="name" name="name"　 placeholder="注文者名をお入れください。" value="<%- user.displayName %>" required></input>
+    <label for="address">連絡先</label>
+      <input type="email" class="form-control" name="address" id="address" placeholder="emailを入れてください。" required value="<%- user._json.mail %>"></input>
+</div>  
+<div class="form-group">
+<label for="order_date">受取日</label>
+  <input type="text" class="form-control" id="order_date" name="order_date" required onchange="checkWeekDay(this.value)">  
+</div>
+<p/>
+<div class="form-group"　id="menu-selection">
+<label for="menu">注文するお弁当</label>
+  <% for(let i=0;i<results.length;i++){
+        row = results[i];            
+        let weekdays = "";
+        if(row.weekdays != null) {
+          weekdays = "("+row.weekdays+")"
+      }%>
+      <div class="form-check">
+      <input class="form-check-input" type="radio" name="menu" value="<%- row.id %>"　id="menu<%- i %>"><label class="form-check-label" for="menu<%- i %>">
+        <%- row.name %> <%- weekdays %> <%- row.price %>円
+      </div>
+    <% } %>
+  </ul>  
+</div>
+  
+
+<div class="form-group">
+    <label for="number">注文個数</label>
+    <select class="form-control" id="number" name="number">
+      <option value="1" selected>1</option>
+      <option value="2">2</option>
+      <option value="3">3</option>
+    </select>
+  </div>    
+<br/>
+備考：<input type="text" name="option">
+<br/>
+修正用パスワード：<input type="password" name="password" disabled></input>
+<br/>
+<input type="submit" value="注文">
+</form>
+
+<script>
+  $('#order_date').datepicker({
+    format: "yyyy-mm-dd",
+    startDate: "<%- start_day %>",    
+    endDate: "<%- end_day %>"
+  });
+  //曜日指定で選べないメニューをdisableにしようとしたけど
+  //最後の最後、ラジオボタンがjqueryで取れなくてうまく動きません。
+  function checkWeekDay(value){
+    const weekdays = ["日","月","火","水","木","金","土"];
+    const date = new Date(value);
+    const weekday = weekdays[date.getDay()];
+    const itemnum = $('input:radio[name="menu"]').length;
+    for(let i=4;i<itemnum;i++){
+      const menuno = "menu"+i;
+      const menulabel = $('label[for="'+menuno+'"]');
+      if(!menulabel.text().includes(weekday)){        
+        $('input[id="'+menuno+'"]').prop("disable",true);
+      }
+      else{
+        $('input[id="'+menuno+'"]').prop("disable",false);        
+      }
+    }
+  }
+  
+</script>
+</div>
+</body>

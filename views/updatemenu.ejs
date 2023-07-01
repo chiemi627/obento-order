@@ -1,0 +1,30 @@
+<%- include('head.ejs'); %>
+<body>
+<%- include('header.ejs'); %>  
+<h1>来週のお弁当メニュー</h1>
+<form action="/admin/update" method="post">  
+<ul>
+<li>開始日：<input type="text" class="form-control" id="start_date" name="start_date">
+</li>  
+<li>最終日：<input type="text" class="form-control" id="end_date" name="end_date">
+</li>
+<li>メニュー（レギュラーメニューは不要です）：<br/>
+<textarea name="menu" cols="100" rows=10>
+お弁当名,オプション,販売曜日（区切らない）,価格
+</textarea>
+  
+</li>
+</ul>  
+<input type="submit" value="更新する">
+</form>
+<script>
+
+  $('#start_date').datepicker({
+   dateFormat: "yy-mm-dd" 
+  });
+  $('#end_date').datepicker({
+    dateFormat: 'yy-mm-dd'
+  });
+</script>
+  
+</body>
