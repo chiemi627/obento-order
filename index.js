@@ -22,11 +22,13 @@ sgMail.setApiKey(process.env['SENDGRID_API_KEY']);
 const passport = require('passport');
 const session = require('express-session');
 const MicrosoftStrategy = require('passport-microsoft').Strategy;
+
 app.use(session({
   secret: 'keyboard cat',
   resave: false,
   saveUninitialized: true
 }));
+
 app.use(passport.initialize());
 app.use(passport.session());
 
@@ -36,14 +38,14 @@ passport.serializeUser((user, done) => {
 passport.deserializeUser((obj, done) => {
   done(null, obj);
 });
+
 passport.use(new MicrosoftStrategy({
-  // Standard OAuth2 options
-  clientID: 'b294fcd2-b7ce-49d2-ace7-95c20f82033e',
-  clientSecret: 'iZ58Q~7g.i8UEVIykVkdfg9inzMQbG-HKYCIbc0L',
-  callbackURL: "https://obento-order.chiemi627.repl.co/auth/microsoft/callback",
+  clientID: process.env['MICROSOFT_CLIENT_ID'],
+  clientSecret: process.env['MICROSOFT_CLIENT_SECRET'],
+  callbackURL: process.env['SERVER_DOMAIN']+"/auth/microsoft/callback",
   scope: ['user.read'],
   tenant: 'common',
-},
+  },
   function(accessToken, refreshToken, profile, done) {
     process.nextTick(() => {
       return done(null, profile);
@@ -52,24 +54,24 @@ passport.use(new MicrosoftStrategy({
 ));
 
 
-app.get('/auth/microsoft', passport.authenticate('microsoft', { prompt: 'select_account' }), (req, res) => {});
+app.get('/auth/microsoft', passport.authenticate('microsoft', { prompt: 'select_account' }), (req, res) => { });
 
 app.get('/auth/microsoft/callback',
   passport.authenticate('microsoft', { failureRedirect: '/login' }),
   (req, res) => { res.redirect("/"); }
 );
 
-app.get('/login',(req,res)=>{
-  res.render('login.ejs',{});
+app.get('/login', (req, res) => {
+  res.render('login.ejs', {});
 })
 
-app.get('/logout', 
-        (req, res)=>{ 
-          req.logout((err)=>{
-            if(err) { return next(err);}
-            res.redirect('/');             
-          }); 
-        });
+app.get('/logout',
+  (req, res) => {
+    req.logout((err) => {
+      if (err) { return next(err); }
+      res.redirect('/');
+    });
+  });
 
 function ensureAuthenticated(req, res, next) {
   if (req.isAuthenticated()) { return next(); }
@@ -106,9 +108,9 @@ app.get('/orderform', ensureAuthenticated, async (req, res) => {
     if (err) {
       console.log(err);
     }
-    else {      
+    else {
       res.render("orderform.ejs", {
-        user:req.user,
+        user: req.user,
         start_day: start_day,
         end_day: current_week.end_day,
         results: rows
@@ -143,11 +145,11 @@ app.post('/order', async function(req, res) {
   });
 });
 
-app.get('/admin/updatemenu', (req, res) => {
+app.get('/admin/updatemenu', ensureAuthenticated, (req, res) => {
   res.render("updatemenu.ejs");
 });
 
-app.post('/admin/update', (req, res) => {
+app.post('/admin/update', ensureAuthenticated, (req, res) => {
   const start_date = req.body.start_date;
   const end_date = req.body.end_date;
   const query = "insert into menu(name,description,weekdays,price,regular,start_day,end_day) values(?,?,?,?,?,?,?)";
@@ -179,7 +181,7 @@ app.get('/sendorders', (req, res) => {
         message.push(`${row.name}${row.number}個（${row.details}）`);
       }
       var options = {
-        uri: "https://maker.ifttt.com/trigger/obento-order/with/key/cw-BvjsKfN78KDZe6dTj0q",
+        uri: "https://maker.ifttt.com/trigger/obento-order/with/key/"+process.env['IFTTT_TOKEN'],
         headers: {
           "Content-type": "application/json",
         },
