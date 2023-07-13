@@ -146,8 +146,24 @@ app.post('/order', async function(req, res) {
 });
 
 app.get('/admin/updatemenu', ensureAuthenticated, (req, res) => {
-  res.render("updatemenu.ejs");
+  if(process.env['ADMIN_MEMBERS'].includes(req.user._json.mail)){
+    res.render("updatemenu.ejs");
+  }else{
+    res.redirect(req.baseUrl+'/');
+  }
 });
+
+app.post('/admin/downloaddb', (req, res) => {
+  if(req.body.token==process.env['ADMIN_TOKEN']){
+    res.set('Content-disposition', 
+          'attachment; filename=obento.db');
+    const data = fs.readFileSync("obento.db");
+    res.send(data);
+  }else{
+    res.redirect(req.baseUrl+'/');
+  }
+});
+
 
 app.post('/admin/update', ensureAuthenticated, (req, res) => {
   const start_date = req.body.start_date;
