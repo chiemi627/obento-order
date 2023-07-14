@@ -62,7 +62,7 @@ app.get('/auth/microsoft/callback',
 );
 
 app.get('/login', (req, res) => {
-  res.render('login.ejs', {});
+  res.render('login.ejs', {user: req.user});
 })
 
 app.get('/logout',
@@ -87,7 +87,11 @@ app.get('/', (req, res) => {
       console.log(err);
     }
     else {
-      res.render("index.ejs", { results: rows });
+      console.log(req.user);
+      res.render("index.ejs", { 
+        user: req.user,        
+        results: rows 
+      });
     }
   })
 });
@@ -138,7 +142,7 @@ app.post('/order', function(req, res) {
         console.log(row);
         db.run("commit");
         send_confirmation_mail(row);
-        res.render("ordered.ejs", row);
+        res.render("ordered.ejs", {user:req.user,result:row});
       }
     });
   });
@@ -160,7 +164,7 @@ app.get('/orderlist',ensureAuthenticated, (req, res) => {
 
 app.get('/admin/updatemenu', ensureAuthenticated, (req, res) => {
   if(process.env['ADMIN_MEMBERS'].includes(req.user._json.mail)){
-    res.render("updatemenu.ejs");
+    res.render("updatemenu.ejs",{user:req.user});
   }else{
     res.redirect(req.baseUrl+'/');
   }

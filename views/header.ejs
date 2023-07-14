@@ -12,9 +12,18 @@
         <li class="nav-item">
           <a class="nav-link" href="orderform">注文</a>
         </li>
+        <% if(!user) {%>
         <li class="nav-item">
           <a class="nav-link" href="login">ログイン</a>
         </li>
+        <% }else{ %>
+          <li class="nav-item">
+            <a class="nav-link" href="#"><%- user.displayName %>さん</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="/logout">ログアウト</a>
+          </li>
+        <% } %>
       </ul>
     </div>
   </div>
