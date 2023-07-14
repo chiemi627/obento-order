@@ -119,17 +119,16 @@ app.get('/orderform', ensureAuthenticated, async (req, res) => {
   })
 });
 
-app.post('/order', async function(req, res) {
+app.post('/order', function(req, res) {
   const name = req.body.name;
   const email = req.body.address;
   const obento_id = req.body.menu;
   const order_date = req.body.order_date;
   const number = req.body.number;
   const option = req.body.option;
-  const password = await bcrypt.hash(req.body.password, 10);
   db.serialize(function() {
     db.run("begin transaction");
-    db.run("insert into obento_order(user_name,obento_id,order_date,number,email,option,passwd) values(?,?,?,?,?,?,?);", [name, obento_id, order_date, number, email, option, password]);
+    db.run("insert into obento_order(user_name,obento_id,order_date,number,email,option) values(?,?,?,?,?,?);", [name, obento_id, order_date, number, email, option]);
     db.get("select * from obento_order o join menu m on o.obento_id=m.id where o.id = last_insert_rowid()", (err, row) => {
       if (err) {
         console.log(err);
@@ -142,6 +141,20 @@ app.post('/order', async function(req, res) {
         res.render("ordered.ejs", row);
       }
     });
+  });
+});
+
+app.get('/orderlist',ensureAuthenticated, (req, res) => {
+  const email = req.user._json.mail;
+  const today = get_datestr(date_jpn(new Date()));
+  const query = "select o.order_date,m.name,o.number from obento_order o join menu m on o.obento_id = m.id where o.email=? and o.order_date >= ? and o.number > 0 order by order_date";
+  db.all(query,[email,today],(err,rows)=>{
+    if(err){
+      console.log(err);      
+    }
+    else{
+      res.render("orderlist.ejs",{today:today,results:rows});      
+    }
   });
 });
 
@@ -159,6 +172,24 @@ app.post('/admin/downloaddb', (req, res) => {
           'attachment; filename=obento.db');
     const data = fs.readFileSync("obento.db");
     res.send(data);
+  }else{
+    res.redirect(req.baseUrl+'/');
+  }
+});
+
+app.get('/admin/showorders', ensureAuthenticated, (req, res) => {
+  if(process.env['ADMIN_MEMBERS'].includes(req.user._json.mail)){
+    const today = get_datestr(date_jpn(new Date()));
+    const query = "select o.id as order_id,o.order_date,o.user_name,m.name,o.number from obento_order o join menu m on o.obento_id = m.id where o.order_date >= ? and o.number > 0 order by order_date";
+    db.all(query,[today],(err,rows)=>{
+      if(err){
+        console.log(err);      
+      }
+      else{
+        res.render("orderlist_all.ejs",{today:today,results:rows});      
+      }
+    });
+      
   }else{
     res.redirect(req.baseUrl+'/');
   }
@@ -182,40 +213,51 @@ app.post('/admin/update', ensureAuthenticated, (req, res) => {
   res.redirect(req.baseUrl + '/');
 });
 
-app.get('/sendorders', (req, res) => {
+app.get('/admin/cancel',(req,res)=>{
+  if(req.query.admin_token==process.env['ADMIN_TOKEN']){
+    const order_id=req.query.order_id;
+    const query = 'update obento_order set number = 0 where id=?';
+    db.run(query,[order_id]);   
+  }
+  res.redirect(req.baseUrl+'/admin/showorders');
+});
 
-  let date = date_jpn(new Date());
-  date.setDate(date.getDate() + 1);
+app.post('/sendorders', (req, res) => {
+  if(req.body.token==process.env['ADMIN_TOKEN']){
 
-  query = "select m.name,sum(o.number) as number,group_concat(o.user_name||'('||o.number||o.option||')') as details from obento_order o join menu m on o.obento_id = m.id where o.order_date = ? group by o.obento_id";
-  db.all(query, [get_datestr(date)], (err, rows) => {
-    if (err) {
-      console.log(err);
-    } else {
-      const message = [`${get_datestr(date)}の注文は以下の通りです。<br/>`];
-      for (let row of rows) {
-        message.push(`${row.name}${row.number}個（${row.details}）`);
+    let date = date_jpn(new Date());
+    date.setDate(date.getDate() + 1);
+
+    query = "select m.name,sum(o.number) as number,group_concat(o.user_name||'('||o.number||o.option||')') as details from obento_order o join menu m on o.obento_id = m.id where o.order_date = ? and o.number > 0 group by o.obento_id";
+    db.all(query, [get_datestr(date)], (err, rows) => {
+      if (err) {
+        console.log(err);
+      } else {
+        const message = [`${get_datestr(date)}の注文は以下の通りです。<br/>`];
+        for (let row of rows) {
+          message.push(`${row.name}${row.number}個（${row.details}）`);
+        }
+        var options = {
+          uri: "https://maker.ifttt.com/trigger/obento-order/with/key/"+process.env['IFTTT_TOKEN'],
+          headers: {
+            "Content-type": "application/json",
+          },
+          json: {
+            "value1": message.join("<br/>")
+          }
+        }
+        request.post(options, (error, ifttt_res, body) => {
+          if (error) {
+            console.log(error);
+          }
+          else {
+            console.log(body);
+            res.send(message.join("<br/>"));
+          }
+        })
       }
-      var options = {
-        uri: "https://maker.ifttt.com/trigger/obento-order/with/key/"+process.env['IFTTT_TOKEN'],
-        headers: {
-          "Content-type": "application/json",
-        },
-        json: {
-          "value1": message.join("<br/>")
-        }
-      }
-      request.post(options, (error, ifttt_res, body) => {
-        if (error) {
-          console.log(error);
-        }
-        else {
-          console.log(body);
-          res.send(message.join("<br/>"));
-        }
-      })
-    }
-  });
+    });
+  }
 });
 
 
