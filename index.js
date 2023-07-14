@@ -208,8 +208,11 @@ app.post('/admin/update', ensureAuthenticated, (req, res) => {
     for (let row of req.body.menu.split(/\n/)) {
       const data = row.split(',');
       data[3] = Number(data[3]);
-      data.push(0, start_date, end_date);
-      db.run(query, data);
+      console.log("name:"+data[0]);
+      if(data[0]?.trim()){
+        data.push(0, start_date, end_date);
+        db.run(query, data);    
+      }
     }
     db.run("delete from current_week");
     db.run("insert into current_week values(?,?)", [start_date, end_date]);
