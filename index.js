@@ -157,7 +157,7 @@ app.get('/orderlist',ensureAuthenticated, (req, res) => {
       console.log(err);      
     }
     else{
-      res.render("orderlist.ejs",{today:today,results:rows});      
+      res.render("orderlist.ejs",{user: req.user,today:today,results:rows});      
     }
   });
 });
