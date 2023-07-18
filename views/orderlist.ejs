@@ -9,7 +9,10 @@
   <ul>
   <% for(row of results){ %>
       <li>
-        <%= row.order_date %> <%= row.name %> <%= row.number %>個　
+        <%= row.order_date %> <%= row.name %> <%= row.number %>個
+          <% if(row.option) {%>
+            （<%= row.option %>）
+          <% } %>
       </li>
   <% } %>
   </ul>

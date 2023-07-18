@@ -147,7 +147,7 @@ app.post('/order', function(req, res) {
 app.get('/orderlist',ensureAuthenticated, (req, res) => {
   const email = req.user._json.mail;
   const today = get_datestr(date_jpn(new Date()));
-  const query = "select o.order_date,m.name,o.number from obento_order o join menu m on o.obento_id = m.id where o.email=? and o.order_date >= ? and o.number > 0 order by order_date";
+  const query = "select o.order_date,m.name,o.number,o.option from obento_order o join menu m on o.obento_id = m.id where o.email=? and o.order_date >= ? and o.number > 0 order by order_date";
   db.all(query,[email,today],(err,rows)=>{
     if(err){
       console.log(err);      
