@@ -29,7 +29,7 @@
           weekdays = "("+row.weekdays+")"
       }%>
       <div class="form-check">
-      <input class="form-check-input" type="radio" name="menu" value="<%- row.id %>"　id="menu<%- i %>"><label class="form-check-label" for="menu<%- i %>">
+      <input id="menu<%- i %>" class="form-check-input" type="radio" name="menu" value="<%- row.id %>"　><label class="form-check-label" for="menu<%- i %>">
         <%- row.name %> <%- weekdays %> <%- row.price %>円
       </div>
     <% } %>
@@ -59,8 +59,7 @@
     startDate: "<%- start_day %>",    
     endDate: "<%- end_day %>"
   });
-  //曜日指定で選べないメニューをdisableにしようとしたけど
-  //最後の最後、ラジオボタンがjqueryで取れなくてうまく動きません。
+  //曜日指定で選べないメニューをdisableにします
   function checkWeekDay(value){
     const weekdays = ["日","月","火","水","木","金","土"];
     const date = new Date(value);
@@ -70,10 +69,10 @@
       const menuno = "menu"+i;
       const menulabel = $('label[for="'+menuno+'"]');
       if(!menulabel.text().includes(weekday)){        
-        $('input[id="'+menuno+'"]').prop("disable",true);
+        $('input[id="'+menuno+'"]').prop("disabled",true);
       }
       else{
-        $('input[id="'+menuno+'"]').prop("disable",false);        
+        $('input[id="'+menuno+'"]').prop("disabled",false);        
       }
     }
   }
