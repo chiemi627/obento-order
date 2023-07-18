@@ -40,3 +40,8 @@ dl.menu dd{
   z-index: 2;
   text-align: right;
   }
+
+.description {
+  margin:2em;
+  width:60vw;
+}

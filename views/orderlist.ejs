@@ -1,7 +1,11 @@
 <%- include('head.ejs'); %>
-<body>
+<body>  
 <%- include('header.ejs'); %>
 <div class="container">
+  <h1>明日以降のお弁当注文状況</h1>
+  <div class="description">
+    修正や取り消しはこのシステムではできませんので、渡辺（chiemi@a.tsukuba-tech.ac.jp）までご連絡ください。
+  </div>
   <ul>
   <% for(row of results){ %>
       <li>

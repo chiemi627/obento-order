@@ -87,7 +87,6 @@ app.get('/', (req, res) => {
       console.log(err);
     }
     else {
-      console.log(req.user);
       res.render("index.ejs", { 
         user: req.user,        
         results: rows 
@@ -101,8 +100,6 @@ app.get('/orderform', ensureAuthenticated, async (req, res) => {
   let start_day = current_week.start_day;
 
   const next_day = nextorderday(date_jpn(new Date()));
-
-  console.log(req.user);
 
   if (next_day > Date.parse(current_week.start_day)) {
     start_day = get_datestr(next_day);
@@ -139,7 +136,6 @@ app.post('/order', function(req, res) {
         db.run("abort");
       }
       else {
-        console.log(row);
         db.run("commit");
         send_confirmation_mail(row);
         res.render("ordered.ejs", {user:req.user,result:row});
@@ -208,7 +204,6 @@ app.post('/admin/update', ensureAuthenticated, (req, res) => {
     for (let row of req.body.menu.split(/\n/)) {
       const data = row.split(',');
       data[3] = Number(data[3]);
-      console.log("name:"+data[0]);
       if(data[0]?.trim()){
         data.push(0, start_date, end_date);
         db.run(query, data);    
@@ -258,7 +253,6 @@ app.post('/sendorders', (req, res) => {
             console.log(error);
           }
           else {
-            console.log(body);
             res.send(message.join("<br/>"));
           }
         })
@@ -278,7 +272,6 @@ function nextorderday(dt) {
   //曜日を出す
   const weekday = dt.getDay();
   if (weekday < 5) { //日から木
-    console.log(date.getHours() * 100 + date.getMinutes());
     if (date.getHours() * 100 + date.getMinutes() > 1800) {
       date.setDate(date.getDate() + 2); //18：00を過ぎたら2日後。
     }
@@ -331,6 +324,7 @@ function send_confirmation_mail(row) {
 購入日：${row.order_date}
 メニュー：${row.name}　${row.price}円
 個数：${row.number}個
+備考：${row.option}
 ===================================
 
 注文内容の修正および取り消しはできません。
