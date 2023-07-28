@@ -40,10 +40,10 @@
 -- select m.id, m.name, m.price, m.description, m.price, m.weekdays
 -- from menu m left outer join current_week c on m.start_day = c.start_day and m.end_day = c.end_day;
 
--- select m.name,sum(o.number),group_concat(o.user_name||'('||o.number||' '|| o.option||')')
--- from obento_order o join menu m on o.obento_id = m.id
--- where o.order_date = '2023-06-26'
--- group by o.obento_id
+select m.name,sum(o.number),group_concat(o.user_name||'('||o.number||' '|| o.option||')')
+from obento_order o join menu m on o.obento_id = m.id
+where o.order_date = '2023-06-26'
+group by o.obento_id
 
 select o.order_date,m.name,o.number
 from obento_order o join menu m on o.obento_id = m.id

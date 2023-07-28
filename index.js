@@ -88,7 +88,8 @@ app.get('/', (req, res) => {
     }
     else {
       res.render("index.ejs", { 
-        user: req.user,        
+        user: req.user,
+        admin: req.user && process.env['ADMIN_MEMBERS'].includes(req.user._json.mail),
         results: rows 
       });
     }
@@ -204,7 +205,7 @@ app.post('/admin/update', ensureAuthenticated, (req, res) => {
     for (let row of req.body.menu.split(/\n/)) {
       const data = row.split(',');
       data[3] = Number(data[3]);
-      if(data[0]?.trim()){
+      if(data[0]?.trim() && data[0]!="お弁当名"){
         data.push(0, start_date, end_date);
         db.run(query, data);    
       }

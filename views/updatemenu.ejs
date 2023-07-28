@@ -9,7 +9,8 @@
 <li>最終日：<input type="text" class="form-control" id="end_date" name="end_date">
 </li>
 <li>メニュー（レギュラーメニューは不要です）：<br/>
-<textarea name="menu" cols="100" rows=10>
+  <input id="menufile" name="menufile" type="file"/><br/>
+<textarea id="menu" name="menu" cols="100" rows=10>
 お弁当名,オプション,販売曜日（区切らない）,価格
 </textarea>
   
@@ -25,6 +26,17 @@
   $('#end_date').datepicker({
     dateFormat: 'yy-mm-dd'
   });
+
+  $('#menufile').on('change',function(e){
+    const file = e.target.files[0];
+    const reader = new FileReader();
+    reader.readAsText(file);
+    reader.addEventListener('load',()=>{
+      $("#menu").val(reader.result);
+    });
+    
+  });
+  
 </script>
   
 </body>

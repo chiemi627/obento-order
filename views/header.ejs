@@ -20,6 +20,11 @@
           <li class="nav-item">
             <a class="nav-link" href="/orderlist"><%- user.displayName %>さん</a>
           </li>
+          <% if(typeof admin!='undefined' && admin){ %>
+            <li class="nav-item">
+              <a class="nav-link" href="/admin/updatemenu">メニュー更新</a>
+            </li>            
+          <% } %>
           <li class="nav-item">
             <a class="nav-link" href="/logout">ログアウト</a>
           </li>
