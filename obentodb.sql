@@ -45,7 +45,7 @@ from obento_order o join menu m on o.obento_id = m.id
 where o.order_date = '2023-06-26'
 group by o.obento_id
 
-select o.order_date,m.name,o.number
-from obento_order o join menu m on o.obento_id = m.id
-where o.email='chiemi@a.tsukuba-tech.ac.jp'
- and o.order_date >= '2023-07-14';
+-- select o.order_date,m.name,o.number
+-- from obento_order o join menu m on o.obento_id = m.id
+-- where o.email='chiemi@a.tsukuba-tech.ac.jp'
+--  and o.order_date >= '2023-07-14';
