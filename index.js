@@ -99,7 +99,7 @@ app.get('/', (req, res) => {
 });
 
 app.get('/orderform', ensureAuthenticated, async (req, res) => {
-  const current_week = await dbget("select * from current_week", []);
+  const current_week = await dbget(db,"select * from current_week", []);
   let start_day = current_week.start_day;
 
   const next_day = nextorderday(date_jpn(new Date()));

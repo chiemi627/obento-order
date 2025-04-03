@@ -26,7 +26,7 @@ function get_datestr(dt) {
   return y + "-" + m + "-" + d;
 }
 
-function dbget(sql, params) {
+function dbget(db, sql, params) {
   return new Promise((resolve, reject) => {
     db.get(sql, params, (err, row) => {
       if (err) reject(err);
