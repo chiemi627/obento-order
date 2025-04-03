@@ -41,6 +41,8 @@ function date_jpn(dt) {
   return date;
 }
 
-module.exports = date_jpn;
-module.exports = get_datestr;
-module.exports = nextorderday;
+module.exports = {
+  date_jpn,
+  get_datastr,
+  nextorderday,
+};
