@@ -3,7 +3,7 @@ const bcrypt = require('bcrypt');
 const request = require('request');
 const app = express();
 
-const {date_jpn,get_datastr,nextorderday} = require('./utilities');
+const { date_jpn, get_datastr, nextorderday } = require('./utilities');
 
 const bodyParser = require("body-parser");
 app.set("view_engine", "ejs");
@@ -44,10 +44,10 @@ passport.deserializeUser((obj, done) => {
 passport.use(new MicrosoftStrategy({
   clientID: process.env['MICROSOFT_CLIENT_ID'],
   clientSecret: process.env['MICROSOFT_CLIENT_SECRET'],
-  callbackURL: process.env['SERVER_DOMAIN']+"/auth/microsoft/callback",
+  callbackURL: process.env['SERVER_DOMAIN'] + "/auth/microsoft/callback",
   scope: ['user.read'],
   tenant: 'common',
-  },
+},
   function(accessToken, refreshToken, profile, done) {
     process.nextTick(() => {
       return done(null, profile);
@@ -64,7 +64,7 @@ app.get('/auth/microsoft/callback',
 );
 
 app.get('/login', (req, res) => {
-  res.render('login.ejs', {user: req.user});
+  res.render('login.ejs', { user: req.user });
 })
 
 app.get('/logout',
@@ -89,10 +89,10 @@ app.get('/', (req, res) => {
       console.log(err);
     }
     else {
-      res.render("index.ejs", { 
+      res.render("index.ejs", {
         user: req.user,
         admin: req.user && process.env['ADMIN_MEMBERS'].includes(req.user._json.mail),
-        results: rows 
+        results: rows
       });
     }
   })
@@ -141,60 +141,60 @@ app.post('/order', function(req, res) {
       else {
         db.run("commit");
         send_confirmation_mail(row);
-        res.render("ordered.ejs", {user:req.user,result:row});
+        res.render("ordered.ejs", { user: req.user, result: row });
       }
     });
   });
 });
 
-app.get('/orderlist',ensureAuthenticated, (req, res) => {
+app.get('/orderlist', ensureAuthenticated, (req, res) => {
   const email = req.user._json.mail;
   const today = get_datestr(date_jpn(new Date()));
   const query = "select o.order_date,m.name,o.number,o.option from obento_order o join menu m on o.obento_id = m.id where o.email=? and o.order_date >= ? and o.number > 0 order by order_date";
-  db.all(query,[email,today],(err,rows)=>{
-    if(err){
-      console.log(err);      
+  db.all(query, [email, today], (err, rows) => {
+    if (err) {
+      console.log(err);
     }
-    else{
-      res.render("orderlist.ejs",{user: req.user,today:today,results:rows});      
+    else {
+      res.render("orderlist.ejs", { user: req.user, today: today, results: rows });
     }
   });
 });
 
 app.get('/admin/updatemenu', ensureAuthenticated, (req, res) => {
-  if(process.env['ADMIN_MEMBERS'].includes(req.user._json.mail)){
-    res.render("updatemenu.ejs",{user:req.user});
-  }else{
-    res.redirect(req.baseUrl+'/');
+  if (process.env['ADMIN_MEMBERS'].includes(req.user._json.mail)) {
+    res.render("updatemenu.ejs", { user: req.user });
+  } else {
+    res.redirect(req.baseUrl + '/');
   }
 });
 
 app.post('/admin/downloaddb', (req, res) => {
-  if(req.body.token==process.env['ADMIN_TOKEN']){
-    res.set('Content-disposition', 
-          'attachment; filename=obento.db');
+  if (req.body.token == process.env['ADMIN_TOKEN']) {
+    res.set('Content-disposition',
+      'attachment; filename=obento.db');
     const data = fs.readFileSync("obento.db");
     res.send(data);
-  }else{
-    res.redirect(req.baseUrl+'/');
+  } else {
+    res.redirect(req.baseUrl + '/');
   }
 });
 
 app.get('/admin/showorders', ensureAuthenticated, (req, res) => {
-  if(process.env['ADMIN_MEMBERS'].includes(req.user._json.mail)){
+  if (process.env['ADMIN_MEMBERS'].includes(req.user._json.mail)) {
     const today = get_datestr(date_jpn(new Date()));
     const query = "select o.id as order_id,o.order_date,o.user_name,m.name,o.number from obento_order o join menu m on o.obento_id = m.id where o.order_date >= ? and o.number > 0 order by order_date";
-    db.all(query,[today],(err,rows)=>{
-      if(err){
-        console.log(err);      
+    db.all(query, [today], (err, rows) => {
+      if (err) {
+        console.log(err);
       }
-      else{
-        res.render("orderlist_all.ejs",{today:today,results:rows});      
+      else {
+        res.render("orderlist_all.ejs", { today: today, results: rows });
       }
     });
-      
-  }else{
-    res.redirect(req.baseUrl+'/');
+
+  } else {
+    res.redirect(req.baseUrl + '/');
   }
 });
 
@@ -207,9 +207,9 @@ app.post('/admin/update', ensureAuthenticated, (req, res) => {
     for (let row of req.body.menu.split(/\n/)) {
       const data = row.split(',');
       data[3] = Number(data[3]);
-      if(data[0]?.trim() && data[0]!="お弁当名"){
+      if (data[0]?.trim() && data[0] != "お弁当名") {
         data.push(0, start_date, end_date);
-        db.run(query, data);    
+        db.run(query, data);
       }
     }
     db.run("delete from current_week");
@@ -218,17 +218,17 @@ app.post('/admin/update', ensureAuthenticated, (req, res) => {
   res.redirect(req.baseUrl + '/');
 });
 
-app.get('/admin/cancel',(req,res)=>{
-  if(req.query.admin_token==process.env['ADMIN_TOKEN']){
-    const order_id=req.query.order_id;
+app.get('/admin/cancel', (req, res) => {
+  if (req.query.admin_token == process.env['ADMIN_TOKEN']) {
+    const order_id = req.query.order_id;
     const query = 'update obento_order set number = 0 where id=?';
-    db.run(query,[order_id]);   
+    db.run(query, [order_id]);
   }
-  res.redirect(req.baseUrl+'/admin/showorders');
+  res.redirect(req.baseUrl + '/admin/showorders');
 });
 
 app.post('/sendorders', (req, res) => {
-  if(req.body.token==process.env['ADMIN_TOKEN']){
+  if (req.body.token == process.env['ADMIN_TOKEN']) {
 
     let date = date_jpn(new Date());
     date.setDate(date.getDate() + 1);
@@ -243,7 +243,8 @@ app.post('/sendorders', (req, res) => {
           message.push(`${row.name}${row.number}個（${row.details}）`);
         }
         var options = {
-          uri: "https://maker.ifttt.com/trigger/obento-order/with/key/"+process.env['IFTTT_TOKEN'],
+          uri: process.env['IFTTT_URL'] + process.env['IFTTT_TOKEN'],
+          //uri: "https://maker.ifttt.com/trigger/obento-order/with/key/"+process.env['IFTTT_TOKEN'],
           headers: {
             "Content-type": "application/json",
           },
