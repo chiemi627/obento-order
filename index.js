@@ -3,7 +3,7 @@ const bcrypt = require('bcrypt');
 const request = require('request');
 const app = express();
 
-const { date_jpn, get_datastr, nextorderday } = require('./utilities');
+const { date_jpn, dbget, get_datestr, nextorderday } = require('./utilities');
 
 const bodyParser = require("body-parser");
 app.set("view_engine", "ejs");

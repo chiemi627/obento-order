@@ -43,6 +43,7 @@ function date_jpn(dt) {
 
 module.exports = {
   date_jpn,
-  get_datastr,
+  dbget,
+  get_datestr,
   nextorderday,
 };
