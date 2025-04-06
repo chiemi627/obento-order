@@ -248,7 +248,7 @@ app.post('/sendorders', (req, res) => {
             "Content-type": "application/json",
           },
           json: {
-            "value1": message.join("<br/>")
+            "value1": message.join("\n")
           }
         }
         request.post(options, (error, ifttt_res, body) => {
