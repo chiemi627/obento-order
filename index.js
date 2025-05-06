@@ -118,28 +118,30 @@ app.get('/', async (req, res) => {
 });
 
 app.get('/orderform', ensureAuthenticated, async (req, res) => {
-  const current_week = await dbget(db, "select * from current_week", []);
-  let start_day = current_week.start_day;
-
-  const next_day = nextorderday(date_jpn(new Date()));
-
-  if (next_day > Date.parse(current_week.start_day)) {
-    start_day = get_datestr(next_day);
-  }
-
-  db.all(query_menu, (err, rows) => {
-    if (err) {
-      console.log(err);
+  try{
+    const current_week = await dbget(pool, "select * from current_week", []);
+    let start_day = current_week.start_day;
+    const next_day = nextorderday(date_jpn(new Date()));
+    if (next_day > Date.parse(current_week.start_day)) {
+      start_day = get_datestr(next_day);
     }
-    else {
+
+    const client = await pool.connect();
+    try {
+      const result = await client.query(query_menu);
       res.render("orderform.ejs", {
         user: req.user,
         start_day: start_day,
         end_day: current_week.end_day,
-        results: rows
+        results: result.rows
       });
+    } finally {
+      client.release();
     }
-  })
+  } catch (err) {
+    console.log(err);
+    res.status(500).send('サーバーエラーが発生しました');
+  }
 });
 
 app.post('/order', function(req, res) {
