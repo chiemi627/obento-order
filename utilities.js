@@ -26,13 +26,14 @@ function get_datestr(dt) {
   return y + "-" + m + "-" + d;
 }
 
-function dbget(db, sql, params) {
-  return new Promise((resolve, reject) => {
-    db.get(sql, params, (err, row) => {
-      if (err) reject(err);
-      resolve(row);
-    })
-  });
+async function dbget(pool, sql, params) {
+  const client = await pool.connect();
+  try {
+    const result = await client.query(sql, params);
+    return result.rows[0];
+  } finally {
+    client.release();
+  }
 }
 
 function date_jpn(dt) {

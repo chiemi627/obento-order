@@ -12,11 +12,17 @@ app.use(bodyParser.json());
 app.use(express.static("public"));
 module.exports = app;
 
-const sqlite3 = require('sqlite3').verbose();
-const fs = require("fs");
-const dbfile = "obento.db";
-const exists = fs.existsSync(dbfile);
-const db = new sqlite3.Database(dbfile);
+const { Pool } = require('pg');
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  max: 10
+});
+
+// const sqlite3 = require('sqlite3').verbose();
+// const fs = require("fs");
+// const dbfile = "obento.db";
+// const exists = fs.existsSync(dbfile);
+// const db = new sqlite3.Database(dbfile);
 
 const sgMail = require('@sendgrid/mail');
 sgMail.setApiKey(process.env['SENDGRID_API_KEY']);
