@@ -89,19 +89,32 @@ function ensureAuthenticated(req, res, next) {
 const query_menu = "select m.id, m.name, m.price, m.description, m.price, m.weekdays,m.start_day,m.end_day from menu m where m.regular = 1 union all select m.id, m.name, m.price, m.description, m.price, m.weekdays,m.start_day,m.end_day from menu m join current_week c on m.start_day = c.start_day and m.end_day = c.end_day where m.regular=0;";
 
 
-app.get('/', (req, res) => {
-  db.all(query_menu, (err, rows) => {
-    if (err) {
-      console.log(err);
-    }
-    else {
-      res.render("index.ejs", {
-        user: req.user,
-        admin: req.user && process.env['ADMIN_MEMBERS'].includes(req.user._json.mail),
-        results: rows
-      });
-    }
-  })
+app.get('/', async (req, res) => {
+  const client = await pool.connect();
+  try{
+    const result = await client.query(query_menu);
+    res.render("index.ejs",{
+      user: req.user,
+      admin: req.user && process.env['ADMIN_MEMBERS'].includes(req.user._json.mail),
+      results: rows
+    });
+  } catch (err) {
+    console.log(err);
+  } finally {
+    client.release();
+  }
+  // db.all(query_menu, (err, rows) => {
+  //   if (err) {
+  //     console.log(err);
+  //   }
+  //   else {
+  //     res.render("index.ejs", {
+  //       user: req.user,
+  //       admin: req.user && process.env['ADMIN_MEMBERS'].includes(req.user._json.mail),
+  //       results: rows
+  //     });
+  //   }
+  // })
 });
 
 app.get('/orderform', ensureAuthenticated, async (req, res) => {
