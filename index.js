@@ -168,18 +168,23 @@ app.post('/order', function(req, res) {
   });
 });
 
-app.get('/orderlist', ensureAuthenticated, (req, res) => {
-  const email = req.user._json.mail;
-  const today = get_datestr(date_jpn(new Date()));
-  const query = "select o.order_date,m.name,o.number,o.option from obento_order o join menu m on o.obento_id = m.id where o.email=? and o.order_date >= ? and o.number > 0 order by order_date";
-  db.all(query, [email, today], (err, rows) => {
-    if (err) {
-      console.log(err);
-    }
-    else {
+app.get('/orderlist', ensureAuthenticated,　async (req, res) => {
+  try{
+    const email = req.user._json.mail;
+    const today = get_datestr(date_jpn(new Date()));
+    const query = "select o.order_date,m.name,o.number,o.option from obento_order o join menu m on o.obento_id = m.id where o.email=$1 and o.order_date >= $2 and o.number > 0 order by order_date";
+
+    const client = await pool.connect();
+    try {
       res.render("orderlist.ejs", { user: req.user, today: today, results: rows });
+    } finally {
+      client.release();
     }
-  });
+  }
+  catch (err) {
+    console.log(err);
+    res.status(500).send('サーバーエラーが発生しました');
+  }
 });
 
 app.get('/admin/updatemenu', ensureAuthenticated, (req, res) => {
