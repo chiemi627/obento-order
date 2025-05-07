@@ -159,6 +159,10 @@ app.post('/cancel-order', ensureAuthenticated, async (req, res) => {
   try {
     const orderId = req.body.orderId;
 
+    if (!orderId) {
+      return res.status(400).json({ error: '注文IDが指定されていません' });
+    }
+
     // 注文情報を取得
     const orderResult = await client.query(
       'SELECT order_date FROM obento_order WHERE id = $1',
