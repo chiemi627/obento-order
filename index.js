@@ -260,7 +260,7 @@ app.post('/admin/update', ensureAuthenticated, async (req, res) => {
 //   res.redirect(req.baseUrl + '/admin/showorders');
 // });
 
-app.post('/sendorders', (req, res) => {
+app.post('/sendorders', async (req, res) => {
   if (req.body.token == process.env['ADMIN_TOKEN']) {
     try{
       let date = date_jpn(new Date());
