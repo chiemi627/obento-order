@@ -87,9 +87,9 @@ const query_menu = "select m.id, m.name, m.price, m.description, m.price, m.week
 
 app.get('/', async (req, res) => {
   const client = await pool.connect();
-  try{
+  try {
     const result = await client.query(query_menu);
-    res.render("index.ejs",{
+    res.render("index.ejs", {
       user: req.user,
       admin: req.user && process.env['ADMIN_MEMBERS'].includes(req.user._json.mail),
       results: result.rows
@@ -102,7 +102,7 @@ app.get('/', async (req, res) => {
 });
 
 app.get('/orderform', ensureAuthenticated, async (req, res) => {
-  try{
+  try {
     const current_week = await dbget(pool, "select * from current_week", []);
     let start_day = current_week.start_day;
     const next_day = nextorderday(date_jpn(new Date()));
@@ -132,37 +132,37 @@ app.post('/order', async function(req, res) {
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
-    const { name, address: email, menu: obento_id, order_date, number, option} = req.body;
+    const { name, address: email, menu: obento_id, order_date, number, option } = req.body;
 
     const result = await client.query(
-      'insert into obento_order(user_name,obento_id,order_date,number,email,option) values($1,$2,$3,$4,$5,$6) RETURNING id',[name, obento_id,order_date, number, email, option]
+      'insert into obento_order(user_name,obento_id,order_date,number,email,option) values($1,$2,$3,$4,$5,$6) RETURNING id', [name, obento_id, order_date, number, email, option]
     );
     const orderId = result.rows[0].id;
     const orderResult = await client.query(
-      'select * from obento_order o join menu m on o.obento_id=m.id where o.id = $1',[orderId]
+      'select * from obento_order o join menu m on o.obento_id=m.id where o.id = $1', [orderId]
     );
 
     await client.query('COMMIT');
 
     const orderData = orderResult.rows[0];
     send_confirmation_mail(orderData);
-    res.render("ordered.ejs", {user: req.user, result: orderData});
-    
-  } catch (err){
+    res.render("ordered.ejs", { user: req.user, result: orderData });
+
+  } catch (err) {
     console.log(err);
     res.status(500).send('サーバーエラーが発生しました');
-  }  
+  }
 });
 
-app.get('/orderlist', ensureAuthenticated,　async (req, res) => {
-  try{
+app.get('/orderlist', ensureAuthenticated, async (req, res) => {
+  try {
     const email = req.user._json.mail;
     const today = get_datestr(date_jpn(new Date()));
     const query = "select o.order_date,m.name,o.number,o.option from obento_order o join menu m on o.obento_id = m.id where o.email=$1 and o.order_date >= $2 and o.number > 0 order by order_date";
 
     const client = await pool.connect();
     try {
-      const result = await client.query(query, [email,today]);
+      const result = await client.query(query, [email, today]);
       res.render("orderlist.ejs", { user: req.user, today: today, results: result.rows });
     } finally {
       client.release();
@@ -202,10 +202,10 @@ app.get('/admin/showorders', ensureAuthenticated, async (req, res) => {
       const client = await pool.connect();
       try {
         const result = await client.query(query, [today]);
-        res.render("orderlist_all.ejs",{ today: today, results: result.rows});
+        res.render("orderlist_all.ejs", { today: today, results: result.rows });
       } finally {
         client.release();
-      }      
+      }
     }
     catch (err) {
       console.log(err);
@@ -219,7 +219,7 @@ app.get('/admin/showorders', ensureAuthenticated, async (req, res) => {
 
 app.post('/admin/update', ensureAuthenticated, async (req, res) => {
   const client = await pool.connect();
-  try{
+  try {
     await client.query('BEGIN');
     const start_date = req.body.start_date;
     const end_date = req.body.end_date;
@@ -235,13 +235,13 @@ app.post('/admin/update', ensureAuthenticated, async (req, res) => {
     }
 
     client.query("delete from current_week");
-    client.query("insert into current_week values(?,?)", [start_date, end_date]);
+    client.query("insert into current_week values($1,$2)", [start_date, end_date]);
 
     client.query('COMMIT');
     res.redirect(req.baseUrl + '/');
 
   }
-  catch (err){
+  catch (err) {
     await client.query('ROLLBACK');
     console.log(err);
     res.status(500).send('メニュー更新中にエラーが発生しました');
@@ -262,7 +262,7 @@ app.post('/admin/update', ensureAuthenticated, async (req, res) => {
 
 app.post('/sendorders', async (req, res) => {
   if (req.body.token == process.env['ADMIN_TOKEN']) {
-    try{
+    try {
       let date = date_jpn(new Date());
       date.setDate(date.getDate() + 1);
       const orderDate = get_datestr(date);
@@ -279,7 +279,7 @@ app.post('/sendorders', async (req, res) => {
 
       const client = await pool.connect();
       try {
-        const result = client.query(query,[orderDate]);
+        const result = client.query(query, [orderDate]);
         const message = [`${get_datestr(date)}の注文は以下の通りです。<br/>`];
         for (let row of result.rows) {
           message.push(`${row.name}${row.number}個（${row.details}）`);
@@ -298,15 +298,15 @@ app.post('/sendorders', async (req, res) => {
             console.log(error);
             res.status(500).send('IFTTTへの送信中にエラーが発生しました');
           }
-          else{
+          else {
             res.send(message.join("<br/>"));
           }
         });
       } finally {
         client.release();
-      }      
+      }
     }
-    catch(err){
+    catch (err) {
       console.log(err);
       res.status(500).send('IFTTTへの送信中にエラーが発生しました');
     }
