@@ -21,7 +21,7 @@
               cancelDeadline.setHours(18, 29, 0, 0);
               if (now < cancelDeadline) { 
             %>
-              <button onclick="cancelOrder('<%= row.id %>')" class="btn btn-danger btn-sm">キャンセル</button>
+              <button onclick="cancelOrder('<%= row.orderId %>')" class="btn btn-danger btn-sm">キャンセル</button>
             <% } %>
       </li>
   <% } %>
