@@ -23,6 +23,7 @@ sgMail.setApiKey(process.env['SENDGRID_API_KEY']);
 
 const passport = require('passport');
 const session = require('express-session');
+const { error } = require('console');
 const MicrosoftStrategy = require('passport-microsoft').Strategy;
 
 app.use(session({
@@ -259,17 +260,26 @@ app.post('/admin/update', ensureAuthenticated, async (req, res) => {
 
 app.post('/sendorders', (req, res) => {
   if (req.body.token == process.env['ADMIN_TOKEN']) {
+    try{
+      let date = date_jpn(new Date());
+      date.setDate(date.getDate() + 1);
+      const orderDate = get_datestr(date);
 
-    let date = date_jpn(new Date());
-    date.setDate(date.getDate() + 1);
+      const query = `
+        SELECT 
+          m.name,
+          SUM(o.number) as number,
+          STRING_AGG(o.user_name || '(' || o.number || o.option || ')', ', ') as details 
+        FROM obento_order o 
+        JOIN menu m ON o.obento_id = m.id 
+        WHERE o.order_date = $1 AND o.number > 0 
+        GROUP BY o.obento_id, m.name`;
 
-    query = "select m.name,sum(o.number) as number,group_concat(o.user_name||'('||o.number||o.option||')') as details from obento_order o join menu m on o.obento_id = m.id where o.order_date = ? and o.number > 0 group by o.obento_id";
-    db.all(query, [get_datestr(date)], (err, rows) => {
-      if (err) {
-        console.log(err);
-      } else {
+      const client = await pool.connect();
+      try {
+        const result = client.query(query,[orderDate]);
         const message = [`${get_datestr(date)}の注文は以下の通りです。<br/>`];
-        for (let row of rows) {
+        for (let row of result.rows) {
           message.push(`${row.name}${row.number}個（${row.details}）`);
         }
         var options = {
@@ -284,13 +294,20 @@ app.post('/sendorders', (req, res) => {
         request.post(options, (error, ifttt_res, body) => {
           if (error) {
             console.log(error);
+            res.status(500).send('IFTTTへの送信中にエラーが発生しました');
           }
-          else {
+          else{
             res.send(message.join("<br/>"));
           }
-        })
-      }
-    });
+        });
+      } finally {
+        client.release();
+      }      
+    }
+    catch(err){
+      console.log(err);
+      res.status(500).send('IFTTTへの送信中にエラーが発生しました');
+    }
   }
 });
 
@@ -307,9 +324,9 @@ function send_confirmation_mail(row) {
     subject: `お弁当注文（${row.order_date}）`,
     text: `
 お弁当のご予約内容は以下の通りです。
-12:10-12:30の間に食堂に行き、
-このメールの内容を担当者に見せてください。
-お支払いはお弁当と引き換えにお支払いください。
+12:10-12:30の間に食堂に行き、お弁当を受け取ってください。
+お支払いはPaypayでお支払いください。支払いURLはTeamsにてお知らせしています。
+不明な場合は渡辺のTeamsチャット（chiemi@a.tsukuba-tech.ac.jp）でご連絡ください。
 ===================================
 購入日：${row.order_date}
 メニュー：${row.name}　${row.price}円
