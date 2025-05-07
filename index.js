@@ -314,11 +314,12 @@ app.post('/sendorders', async (req, res) => {
 
       const client = await pool.connect();
       try {
-        const result = client.query(query, [orderDate]);
-        const rows = result?.rows || [];
-        
+
+        const result = await client.query(query, [orderDate]);
+        const rows = result.rows || [];
+
         const message = [`${get_datestr(date)}の注文は以下の通りです。<br/>`];
-        for (let row of result.rows) {
+        for (let row of rows) {
           message.push(`${row.name}${row.number}個（${row.details}）`);
         }
         var options = {
