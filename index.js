@@ -154,6 +154,46 @@ app.post('/order', async function(req, res) {
   }
 });
 
+app.post('/cancel-order', ensureAuthenticated, async (req, res) => {
+  const client = await pool.connect();
+  try {
+    const orderId = req.body.orderId;
+
+    // 注文情報を取得
+    const orderResult = await client.query(
+      'SELECT order_date FROM obento_order WHERE id = $1 AND email = $2',
+      [orderId, req.user._json.mail]
+    );
+
+    if (orderResult.rows.length === 0) {
+      return res.status(404).json({ error: '注文が見つかりません' });
+    }
+
+    const orderDate = new Date(orderResult.rows[0].order_date);
+    const now = new Date();
+    const cancelDeadline = new Date(orderDate);
+    cancelDeadline.setDate(cancelDeadline.getDate() - 1);
+    cancelDeadline.setHours(18, 29, 0, 0);
+
+    if (now >= cancelDeadline) {
+      return res.status(400).json({ error: 'キャンセル期限を過ぎています' });
+    }
+
+    // 注文をキャンセル（数量を0に設定）
+    await client.query(
+      'UPDATE obento_order SET number = 0 WHERE id = $1 AND email = $2',
+      [orderId, req.user._json.mail]
+    );
+
+    res.json({ success: true });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'サーバーエラーが発生しました' });
+  } finally {
+    client.release();
+  }
+});
+
 app.get('/orderlist', ensureAuthenticated, async (req, res) => {
   try {
     const email = req.user._json.mail;
@@ -250,15 +290,6 @@ app.post('/admin/update', ensureAuthenticated, async (req, res) => {
     client.release();
   }
 });
-
-// app.get('/admin/cancel', (req, res) => {
-//   if (req.query.admin_token == process.env['ADMIN_TOKEN']) {
-//     const order_id = req.query.order_id;
-//     const query = 'update obento_order set number = 0 where id=?';
-//     db.run(query, [order_id]);
-//   }
-//   res.redirect(req.baseUrl + '/admin/showorders');
-// });
 
 app.post('/sendorders', async (req, res) => {
   if (req.body.token == process.env['ADMIN_TOKEN']) {
