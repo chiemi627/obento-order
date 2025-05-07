@@ -6,9 +6,6 @@
   <% for(row of results){ %>
       <li>
         <%= row.order_date %> <%= row.user_name %> <%= row.name %> <%= row.number %>個　
-        <% if(row.order_date!=today){ %>
-          <a href="/admin/cancel?order_id=<%= row.order_id%>&admin_token=<%=process.env['ADMIN_TOKEN']%>">注文取り消し</a>
-        <% } %>
       </li>
   <% } %>
   </ul>
