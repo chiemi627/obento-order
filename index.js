@@ -96,7 +96,7 @@ app.get('/', async (req, res) => {
     res.render("index.ejs",{
       user: req.user,
       admin: req.user && process.env['ADMIN_MEMBERS'].includes(req.user._json.mail),
-      results: rows
+      results: result.rows
     });
   } catch (err) {
     console.log(err);
@@ -176,7 +176,8 @@ app.get('/orderlist', ensureAuthenticated,　async (req, res) => {
 
     const client = await pool.connect();
     try {
-      res.render("orderlist.ejs", { user: req.user, today: today, results: rows });
+      const result = await client.query(query, [email,today]);
+      res.render("orderlist.ejs", { user: req.user, today: today, results: result.rows });
     } finally {
       client.release();
     }
@@ -206,19 +207,24 @@ app.post('/admin/downloaddb', (req, res) => {
   }
 });
 
-app.get('/admin/showorders', ensureAuthenticated, (req, res) => {
+app.get('/admin/showorders', ensureAuthenticated, async (req, res) => {
   if (process.env['ADMIN_MEMBERS'].includes(req.user._json.mail)) {
-    const today = get_datestr(date_jpn(new Date()));
-    const query = "select o.id as order_id,o.order_date,o.user_name,m.name,o.number from obento_order o join menu m on o.obento_id = m.id where o.order_date >= ? and o.number > 0 order by order_date";
-    db.all(query, [today], (err, rows) => {
-      if (err) {
-        console.log(err);
-      }
-      else {
-        res.render("orderlist_all.ejs", { today: today, results: rows });
-      }
-    });
+    try {
+      const today = get_datestr(date_jpn(new Date()));
+      const query = "select o.id as order_id,o.order_date,o.user_name,m.name,o.number from obento_order o join menu m on o.obento_id = m.id where o.order_date >= $1 and o.number > 0 order by order_date";
 
+      const client = await pool.connect();
+      try {
+        const result = await client.query(query, [today]);
+        res.render("orderlist_all.ejs",{ today: today, results: result.rows});
+      } finally {
+        client.release();
+      }      
+    }
+    catch (err) {
+      console.log(err);
+      res.status(500).send('サーバーエラーが発生しました');
+    }
   } else {
     res.redirect(req.baseUrl + '/');
   }
