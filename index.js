@@ -18,12 +18,6 @@ const pool = new Pool({
   max: 10
 });
 
-// const sqlite3 = require('sqlite3').verbose();
-// const fs = require("fs");
-// const dbfile = "obento.db";
-// const exists = fs.existsSync(dbfile);
-// const db = new sqlite3.Database(dbfile);
-
 const sgMail = require('@sendgrid/mail');
 sgMail.setApiKey(process.env['SENDGRID_API_KEY']);
 
@@ -60,7 +54,6 @@ passport.use(new MicrosoftStrategy({
     });
   }
 ));
-
 
 app.get('/auth/microsoft', passport.authenticate('microsoft', { prompt: 'select_account' }), (req, res) => { });
 
@@ -103,18 +96,6 @@ app.get('/', async (req, res) => {
   } finally {
     client.release();
   }
-  // db.all(query_menu, (err, rows) => {
-  //   if (err) {
-  //     console.log(err);
-  //   }
-  //   else {
-  //     res.render("index.ejs", {
-  //       user: req.user,
-  //       admin: req.user && process.env['ADMIN_MEMBERS'].includes(req.user._json.mail),
-  //       results: rows
-  //     });
-  //   }
-  // })
 });
 
 app.get('/orderform', ensureAuthenticated, async (req, res) => {
@@ -144,28 +125,30 @@ app.get('/orderform', ensureAuthenticated, async (req, res) => {
   }
 });
 
-app.post('/order', function(req, res) {
-  const name = req.body.name;
-  const email = req.body.address;
-  const obento_id = req.body.menu;
-  const order_date = req.body.order_date;
-  const number = req.body.number;
-  const option = req.body.option;
-  db.serialize(function() {
-    db.run("begin transaction");
-    db.run("insert into obento_order(user_name,obento_id,order_date,number,email,option) values(?,?,?,?,?,?);", [name, obento_id, order_date, number, email, option]);
-    db.get("select * from obento_order o join menu m on o.obento_id=m.id where o.id = last_insert_rowid()", (err, row) => {
-      if (err) {
-        console.log(err);
-        db.run("abort");
-      }
-      else {
-        db.run("commit");
-        send_confirmation_mail(row);
-        res.render("ordered.ejs", { user: req.user, result: row });
-      }
-    });
-  });
+app.post('/order', async function(req, res) {
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    const { name, address: email, menu: obento_id, order_date, number, option} = req.body;
+
+    const result = await client.query(
+      'insert into obento_order(user_name,obento_id,order_date,number,email,option) values($1,$2,$3,$4,$5,$6) RETURNING id',[name, obento_id,order_date, number, email, option]
+    );
+    const orderId = result.rows[0].id;
+    const orderResult = await client.query(
+      'select * from obento_order o join menu m on o.obento_id=m.id where o.id = $1',[orderId]
+    );
+
+    await client.query('COMMIT');
+
+    const orderData = orderResult.rows[0];
+    send_confirmation_mail(orderData);
+    res.render("ordered.ejs", {user: req.user, result: orderData});
+    
+  } catch (err){
+    console.log(err);
+    res.status(500).send('サーバーエラーが発生しました');
+  }  
 });
 
 app.get('/orderlist', ensureAuthenticated,　async (req, res) => {
@@ -196,16 +179,16 @@ app.get('/admin/updatemenu', ensureAuthenticated, (req, res) => {
   }
 });
 
-app.post('/admin/downloaddb', (req, res) => {
-  if (req.body.token == process.env['ADMIN_TOKEN']) {
-    res.set('Content-disposition',
-      'attachment; filename=obento.db');
-    const data = fs.readFileSync("obento.db");
-    res.send(data);
-  } else {
-    res.redirect(req.baseUrl + '/');
-  }
-});
+// app.post('/admin/downloaddb', (req, res) => {
+//   if (req.body.token == process.env['ADMIN_TOKEN']) {
+//     res.set('Content-disposition',
+//       'attachment; filename=obento.db');
+//     const data = fs.readFileSync("obento.db");
+//     res.send(data);
+//   } else {
+//     res.redirect(req.baseUrl + '/');
+//   }
+// });
 
 app.get('/admin/showorders', ensureAuthenticated, async (req, res) => {
   if (process.env['ADMIN_MEMBERS'].includes(req.user._json.mail)) {
