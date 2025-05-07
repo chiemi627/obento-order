@@ -202,7 +202,7 @@ app.get('/orderlist', ensureAuthenticated, async (req, res) => {
   try {
     const email = req.user._json.mail;
     const today = get_datestr(date_jpn(new Date()));
-    const query = "select o.order_date,m.name,o.number,o.option,o.id as orderId from obento_order o join menu m on o.obento_id = m.id where o.email=$1 and o.order_date >= $2 and o.number > 0 order by order_date";
+    const query = "select o.order_date,m.name,o.number,o.option,o.id as orderid from obento_order o join menu m on o.obento_id = m.id where o.email=$1 and o.order_date >= $2 and o.number > 0 order by order_date";
 
     const client = await pool.connect();
     try {
