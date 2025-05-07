@@ -214,33 +214,48 @@ app.get('/admin/showorders', ensureAuthenticated, async (req, res) => {
 });
 
 
-app.post('/admin/update', ensureAuthenticated, (req, res) => {
-  const start_date = req.body.start_date;
-  const end_date = req.body.end_date;
-  const query = "insert into menu(name,description,weekdays,price,regular,start_day,end_day) values(?,?,?,?,?,?,?)";
-  db.serialize(function() {
+app.post('/admin/update', ensureAuthenticated, async (req, res) => {
+  const client = await pool.connect();
+  try{
+    await client.query('BEGIN');
+    const start_date = req.body.start_date;
+    const end_date = req.body.end_date;
+    const query = "insert into menu(name,description,weekdays,price,regular,start_day,end_day) values($1,$2,$3,$4,$5,$6,$7)";
+
     for (let row of req.body.menu.split(/\n/)) {
       const data = row.split(',');
       data[3] = Number(data[3]);
       if (data[0]?.trim() && data[0] != "お弁当名") {
         data.push(0, start_date, end_date);
-        db.run(query, data);
+        await client.query(query, data);
       }
     }
-    db.run("delete from current_week");
-    db.run("insert into current_week values(?,?)", [start_date, end_date]);
-  });
-  res.redirect(req.baseUrl + '/');
+
+    client.query("delete from current_week");
+    client.query("insert into current_week values(?,?)", [start_date, end_date]);
+
+    client.query('COMMIT');
+    res.redirect(req.baseUrl + '/');
+
+  }
+  catch (err){
+    await client.query('ROLLBACK');
+    console.log(err);
+    res.status(500).send('メニュー更新中にエラーが発生しました');
+  }
+  finally {
+    client.release();
+  }
 });
 
-app.get('/admin/cancel', (req, res) => {
-  if (req.query.admin_token == process.env['ADMIN_TOKEN']) {
-    const order_id = req.query.order_id;
-    const query = 'update obento_order set number = 0 where id=?';
-    db.run(query, [order_id]);
-  }
-  res.redirect(req.baseUrl + '/admin/showorders');
-});
+// app.get('/admin/cancel', (req, res) => {
+//   if (req.query.admin_token == process.env['ADMIN_TOKEN']) {
+//     const order_id = req.query.order_id;
+//     const query = 'update obento_order set number = 0 where id=?';
+//     db.run(query, [order_id]);
+//   }
+//   res.redirect(req.baseUrl + '/admin/showorders');
+// });
 
 app.post('/sendorders', (req, res) => {
   if (req.body.token == process.env['ADMIN_TOKEN']) {
