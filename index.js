@@ -162,7 +162,7 @@ app.post('/cancel-order', ensureAuthenticated, async (req, res) => {
     // 注文情報を取得
     const orderResult = await client.query(
       'SELECT order_date FROM obento_order WHERE id = $1',
-      [orderId, req.user._json.mail]
+      [orderId]
     );
 
     if (orderResult.rows.length === 0) {
