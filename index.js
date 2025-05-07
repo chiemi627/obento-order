@@ -161,7 +161,7 @@ app.post('/cancel-order', ensureAuthenticated, async (req, res) => {
 
     // 注文情報を取得
     const orderResult = await client.query(
-      'SELECT order_date FROM obento_order WHERE id = $1 AND email = $2',
+      'SELECT order_date FROM obento_order WHERE id = $1',
       [orderId, req.user._json.mail]
     );
 
@@ -181,7 +181,7 @@ app.post('/cancel-order', ensureAuthenticated, async (req, res) => {
 
     // 注文をキャンセル（数量を0に設定）
     await client.query(
-      'UPDATE obento_order SET number = 0 WHERE id = $1 AND email = $2',
+      'UPDATE obento_order SET number = 0 WHERE id = $1',
       [orderId, req.user._json.mail]
     );
 
