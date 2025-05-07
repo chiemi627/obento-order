@@ -15,8 +15,9 @@ module.exports = app;
 const { Pool } = require('pg');
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
-
-  max: 10
+  ssl: {
+    rejectUnauthorized: false,
+  }
 });
 
 const sgMail = require('@sendgrid/mail');
